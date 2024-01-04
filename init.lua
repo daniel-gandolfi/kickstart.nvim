@@ -88,7 +88,7 @@ require('lazy').setup({
 
       -- Useful status updates for LSP
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-      { 'j-hui/fidget.nvim', opts = {} },
+      { 'j-hui/fidget.nvim',       opts = {} },
 
       -- Additional lua configuration, makes nvim stuff amazing!
       'folke/neodev.nvim',
@@ -106,6 +106,7 @@ require('lazy').setup({
       -- Adds LSP completion capabilities
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-path',
+      'hrsh7th/cmp-buffer',
 
       -- Adds a number of user-friendly snippets
       'rafamadriz/friendly-snippets',
@@ -113,7 +114,7 @@ require('lazy').setup({
   },
 
   -- Useful plugin to show you pending keybinds.
-  { 'folke/which-key.nvim', opts = {} },
+  { 'folke/which-key.nvim',  opts = {} },
   {
     -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
@@ -126,6 +127,9 @@ require('lazy').setup({
         topdelete = { text = '‾' },
         changedelete = { text = '~' },
       },
+      numhl = true,
+      current_line_blame = true,
+      update_debounce = 350,
       on_attach = function(bufnr)
         local gs = package.loaded.gitsigns
 
@@ -158,33 +162,36 @@ require('lazy').setup({
 
         -- Actions
         -- visual mode
-        map('v', '<leader>hs', function()
+        map('v', '<leader>ghs', function()
           gs.stage_hunk { vim.fn.line '.', vim.fn.line 'v' }
         end, { desc = 'stage git hunk' })
-        map('v', '<leader>hr', function()
+        map('v', '<leader>ghr', function()
           gs.reset_hunk { vim.fn.line '.', vim.fn.line 'v' }
         end, { desc = 'reset git hunk' })
         -- normal mode
-        map('n', '<leader>hs', gs.stage_hunk, { desc = 'git stage hunk' })
-        map('n', '<leader>hr', gs.reset_hunk, { desc = 'git reset hunk' })
-        map('n', '<leader>hS', gs.stage_buffer, { desc = 'git Stage buffer' })
-        map('n', '<leader>hu', gs.undo_stage_hunk, { desc = 'undo stage hunk' })
-        map('n', '<leader>hR', gs.reset_buffer, { desc = 'git Reset buffer' })
+        local gitsigns = package.loaded.gitsigns
+        vim.keymap.set('n', '<leader>gp', gitsigns.prev_hunk, { buffer = bufnr, desc = '[G]it [G]o to [P]revious Hunk' })
+        vim.keymap.set('n', '<leader>gn', gitsigns.next_hunk, { buffer = bufnr, desc = '[G]o to [N]ext Hunk' })
+        map('n', '<leader>ghs', gs.stage_hunk, { desc = 'git stage hunk' })
+        map('n', '<leader>ghr', gs.reset_hunk, { desc = 'git reset hunk' })
+        map('n', '<leader>ghS', gs.stage_buffer, { desc = 'git Stage buffer' })
+        map('n', '<leader>ghu', gs.undo_stage_hunk, { desc = 'undo stage hunk' })
+        map('n', '<leader>ghR', gs.reset_buffer, { desc = 'git Reset buffer' })
         map('n', '<leader>hp', gs.preview_hunk, { desc = 'preview git hunk' })
-        map('n', '<leader>hb', function()
+        map('n', '<leader>ghb', function()
           gs.blame_line { full = false }
         end, { desc = 'git blame line' })
-        map('n', '<leader>hd', gs.diffthis, { desc = 'git diff against index' })
-        map('n', '<leader>hD', function()
+        map('n', '<leader>ghd', gs.diffthis, { desc = 'git diff against index' })
+        map('n', '<leader>ghD', function()
           gs.diffthis '~'
         end, { desc = 'git diff against last commit' })
 
         -- Toggles
-        map('n', '<leader>tb', gs.toggle_current_line_blame, { desc = 'toggle git blame line' })
-        map('n', '<leader>td', gs.toggle_deleted, { desc = 'toggle git show deleted' })
+        map('n', '<leader>gtb', gs.toggle_current_line_blame, { desc = 'toggle git blame line' })
+        map('n', '<leader>gtd', gs.toggle_deleted, { desc = 'toggle git show deleted' })
 
         -- Text object
-        map({ 'o', 'x' }, 'ih', ':<C-U>Gitsigns select_hunk<CR>', { desc = 'select git hunk' })
+        map({ 'o', 'x' }, 'gih', ':<C-U>Gitsigns select_hunk<CR>', { desc = 'select git hunk' })
       end,
     },
   },
@@ -194,6 +201,9 @@ require('lazy').setup({
     'navarasu/onedark.nvim',
     priority = 1000,
     config = function()
+      require('onedark').setup {
+        style = "darker"
+      }
       vim.cmd.colorscheme 'onedark'
     end,
   },
@@ -204,7 +214,7 @@ require('lazy').setup({
     -- See `:help lualine.txt`
     opts = {
       options = {
-        icons_enabled = false,
+        icons_enabled = true,
         theme = 'onedark',
         component_separators = '|',
         section_separators = '',
@@ -266,7 +276,8 @@ require('lazy').setup({
   --    Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --
   --    For additional information see: https://github.com/folke/lazy.nvim#-structuring-your-plugins
-  -- { import = 'custom.plugins' },
+  { import = 'kickstart.plugins' },
+  { import = 'custom.plugins' },
 }, {})
 
 -- [[ Setting options ]]
@@ -275,9 +286,17 @@ require('lazy').setup({
 
 -- Set highlight on search
 vim.o.hlsearch = false
+vim.o.incsearch = true
 
 -- Make line numbers default
 vim.wo.number = true
+vim.wo.relativenumber = true -- relative line numbers
+vim.o.ts = 2
+vim.o.sts = 2
+vim.o.sw = 2
+
+-- wrap row on left / right
+vim.o.whichwrap = "b,s,<,>,[,]"
 
 -- Enable mouse mode
 vim.o.mouse = 'a'
@@ -310,6 +329,7 @@ vim.o.completeopt = 'menuone,noselect'
 -- NOTE: You should make sure your terminal supports this
 vim.o.termguicolors = true
 
+vim.o.cursorline = true
 -- [[ Basic Keymaps ]]
 
 -- Keymaps for better default experience
@@ -321,10 +341,10 @@ vim.keymap.set('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = tr
 vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
 
 -- Diagnostic keymaps
-vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
-vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next diagnostic message' })
-vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostics list' })
+vim.keymap.set('n', '<leader>dp', vim.diagnostic.goto_prev, { desc = "Go to [D]iagnostic [P]revious" })
+vim.keymap.set('n', '<leader>dn', vim.diagnostic.goto_next, { desc = "Go to [D]iagnostic [N]ext message" })
+vim.keymap.set('n', '<leader>dm', vim.diagnostic.open_float, { desc = "Open floating [D]iagnostic [M]essage" })
+vim.keymap.set('n', '<leader>dl', vim.diagnostic.setloclist, { desc = "Open [D]iagnostics [L]ist" })
 
 -- [[ Highlight on yank ]]
 -- See `:help vim.highlight.on_yank()`
@@ -392,13 +412,13 @@ vim.api.nvim_create_user_command('LiveGrepGitRoot', live_grep_git_root, {})
 -- See `:help telescope.builtin`
 vim.keymap.set('n', '<leader>?', require('telescope.builtin').oldfiles, { desc = '[?] Find recently opened files' })
 vim.keymap.set('n', '<leader><space>', require('telescope.builtin').buffers, { desc = '[ ] Find existing buffers' })
-vim.keymap.set('n', '<leader>/', function()
+vim.keymap.set('n', '<leader>fc', function()
   -- You can pass additional configuration to telescope to change theme, layout, etc.
   require('telescope.builtin').current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
     winblend = 10,
     previewer = false,
   })
-end, { desc = '[/] Fuzzily search in current buffer' })
+end, { desc = 'Fuzzily [f]ind in [c]urrent buffer' })
 
 local function telescope_live_grep_open_files()
   require('telescope.builtin').live_grep {
@@ -407,15 +427,18 @@ local function telescope_live_grep_open_files()
   }
 end
 vim.keymap.set('n', '<leader>s/', telescope_live_grep_open_files, { desc = '[S]earch [/] in Open Files' })
-vim.keymap.set('n', '<leader>ss', require('telescope.builtin').builtin, { desc = '[S]earch [S]elect Telescope' })
-vim.keymap.set('n', '<leader>gf', require('telescope.builtin').git_files, { desc = 'Search [G]it [F]iles' })
-vim.keymap.set('n', '<leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
+vim.keymap.set('n', '<leader>st', require('telescope.builtin').builtin, { desc = '[S]earch [S]elect Telescope' })
+vim.keymap.set('n', '<leader>sgf', require('telescope.builtin').git_files, { desc = '[S]earch [G]it [F]iles' })
+vim.keymap.set('n', '<leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles [N]ame' })
 vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
 vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
-vim.keymap.set('n', '<leader>sg', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
+vim.keymap.set('n', '<leader>sw', require('telescope.builtin').live_grep, { desc = '[S]earch [W]ord' })
 vim.keymap.set('n', '<leader>sG', ':LiveGrepGitRoot<cr>', { desc = '[S]earch by [G]rep on Git Root' })
-vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })
+vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = '[S]earch by [D]iagnostic' })
 vim.keymap.set('n', '<leader>sr', require('telescope.builtin').resume, { desc = '[S]earch [R]esume' })
+vim.keymap.set('n', '<leader>sb', require('telescope.builtin').buffers, { desc = '[S]earch by [B]uffers' })
+vim.keymap.set('n', '<leader>ss', require('telescope.builtin').lsp_dynamic_workspace_symbols,
+  { desc = '[S]earch [S]ymbols in workspace' })
 
 -- [[ Configure Treesitter ]]
 -- See `:help nvim-treesitter`
@@ -423,7 +446,7 @@ vim.keymap.set('n', '<leader>sr', require('telescope.builtin').resume, { desc = 
 vim.defer_fn(function()
   require('nvim-treesitter.configs').setup {
     -- Add languages to be installed here that you want installed for treesitter
-    ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'javascript', 'typescript', 'vimdoc', 'vim', 'bash' },
+    ensure_installed = { 'c', 'cpp', 'css', 'html', 'lua', 'rust', 'tsx', 'javascript', 'typescript', 'scss', 'help', 'vim' },
 
     -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
     auto_install = false,
@@ -522,7 +545,7 @@ local on_attach = function(_, bufnr)
 
   -- See `:help K` for why this keymap
   nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
-  nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
+  --nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
 
   -- Lesser used LSP functionality
   nmap('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
@@ -573,16 +596,14 @@ local servers = {
   -- clangd = {},
   -- gopls = {},
   -- pyright = {},
-  -- rust_analyzer = {},
-  -- tsserver = {},
-  -- html = { filetypes = { 'html', 'twig', 'hbs'} },
+  rust_analyzer = {},
+  tsserver = {},
+  html = { filetypes = { 'html', 'twig', 'hbs' } },
 
   lua_ls = {
     Lua = {
       workspace = { checkThirdParty = false },
       telemetry = { enable = false },
-      -- NOTE: toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-      -- diagnostics = { disable = { 'missing-fields' } },
     },
   },
 }
@@ -619,6 +640,7 @@ local luasnip = require 'luasnip'
 require('luasnip.loaders.from_vscode').lazy_load()
 luasnip.config.setup {}
 
+-- https://github.com/hrsh7th/nvim-cmp#recommended-configuratio
 cmp.setup {
   snippet = {
     expand = function(args)
@@ -631,8 +653,8 @@ cmp.setup {
   mapping = cmp.mapping.preset.insert {
     ['<C-n>'] = cmp.mapping.select_next_item(),
     ['<C-p>'] = cmp.mapping.select_prev_item(),
-    ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-    ['<C-f>'] = cmp.mapping.scroll_docs(4),
+    ['<C-i>'] = cmp.mapping.scroll_docs(-4),
+    ['<C-k>'] = cmp.mapping.scroll_docs(4),
     ['<C-Space>'] = cmp.mapping.complete {},
     ['<CR>'] = cmp.mapping.confirm {
       behavior = cmp.ConfirmBehavior.Replace,
